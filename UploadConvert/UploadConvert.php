@@ -150,14 +150,23 @@ class extUploadConvert {
 		}
 	}
 	
-	static public function evaluateFile($file='', $originalName='', $mime='', $size=0)
+	static public function evaluateFile($file='', $originalName='', $mime='', $size=0, $requestedFilename)
 	{
+		$pi = pathinfo($requestedFilename);
+		if (isset($pi['extension']))
+		{
+			$pi_orig = pathinfo($originalName);
+			if ($pi_orig['extension'] != $pi['extension'])
+				$originalName = $requestedFilename;
+		}
+
 		foreach(self::$filters as $idx=>$filter)
 			switch($filter['matchType'])
 			{
 				case 'extension':
 					if(self::matchExtensionFilter($originalName, $idx)) return($idx);
 					else break;
+
 				case 'mimetype':
 					if(self::matchMimeTypeFilter($mime, $idx)) return($idx);
 					else break;
@@ -201,7 +210,8 @@ class extUploadConvertFile extends UploadFromFile {
 				$upload->getTempName(),
 				$upload->getName(),
 				extUploadConvert::getMimeType($upload->getTempName()),
-				$upload->getSize());
+				$upload->getSize(),
+				$request->getText( 'wpDestFile' ));
 			
 			// no matching filter? handle it normally.
 			if ($f === false)
@@ -218,18 +228,24 @@ class extUploadConvertFile extends UploadFromFile {
 			
 			if ($r === true) // filter succeeded
 			{
+				$newFilename = $request->getText( 'wpDestFile' );
+				if (empty($newFilename))
+					$newFilename = $upload->getName();
+
 				if ($filter['newextension'] != '')
-					$newfn = $upload->getName().'.'.$filter['newextension'];
-				else
-					$newfn = $upload->getName();
+				{
+					// Change the extension of the uploaded file
+					$existingExtension = end(explode('.', $newFilename));
+					$newFilename = str_replace('.' . $existingExtension, '.' . $filter['newextension'], $newFilename);;
+				}
 				
 				$this->initializePathInfo(
-					$newfn,
+					$newFilename,
 					$upload->getTempName(),
 					filesize($upload->getTempName()),
 					false);
 				
-				$request->setVal('wpDestFile', $newfn);
+				$request->setVal('wpDestFile', $newFilename);
 			}
 		}
 		
