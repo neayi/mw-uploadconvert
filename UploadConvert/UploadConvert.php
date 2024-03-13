@@ -150,7 +150,7 @@ class extUploadConvert {
 		}
 	}
 	
-	static public function evaluateFile($file='', $originalName='', $mime='', $size=0, $requestedFilename)
+	static public function evaluateFile($file='', $originalName='', $mime='', $size=0, $requestedFilename = '')
 	{
 		$pi = pathinfo($requestedFilename);
 		if (isset($pi['extension']))
